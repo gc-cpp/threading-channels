@@ -18,10 +18,10 @@ public class ChannelController : ControllerBase
     }
 
     [HttpPost("subscribe/{userId}")]
-    public void SubscribeUser([FromRoute] string userId, [FromServices] IServiceProvider serviceProvider)
+    public void SubscribeUser([FromRoute] string userId)
     {
         _logger.LogInformation($"subscribe {userId}");
-        _channelPool.AddChannel(userId, serviceProvider);
+        _channelPool.AddChannel(userId);
     }
 
     [HttpPost("unsubscribe/{userId}")]
