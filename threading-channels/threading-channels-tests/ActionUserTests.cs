@@ -31,7 +31,7 @@ public class ActionUserTests
 
                 services.AddPooledDbContextFactory<UserActionContext>(options =>
                     options.UseNpgsql(
-                        $"User ID=postgres;Password=pgpassw0rd;Host=localhost;Port=15432;Database=channels-{Guid.NewGuid()};Connection Lifetime=0;")
+                        $"User ID=postgres;Password=;Host=localhost;Port=15432;Database=channels-{Guid.NewGuid()};Connection Lifetime=0;")
                 );
 
             });
