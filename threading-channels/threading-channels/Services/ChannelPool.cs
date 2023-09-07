@@ -19,7 +19,8 @@ public class ChannelPool
 
     public void AddChannel(string userId)
     {
-        var channel = Channel.CreateUnbounded<UserAction>(new UnboundedChannelOptions { SingleReader = true });
+        var channel = Channel.CreateUnbounded<UserAction>(new UnboundedChannelOptions
+            { SingleReader = true });
         _channels.TryAdd(userId, channel);
         
         var longChannelTask = new LongChannelTask();
