@@ -5,8 +5,10 @@ namespace threading_channels.Services;
 
 public class LongChannelTask
 {
-    readonly CancellationTokenSource _cts = new ();
-    
+    private readonly CancellationTokenSource _cts = new ();
+
+    public CancellationToken CancellationToken => _cts.Token;
+
     public async Task StartTask(Channel<UserAction> value, Func<Channel<UserAction>, Task> act)  
     {  
         while (!value.Reader.Completion.IsCompleted)  
