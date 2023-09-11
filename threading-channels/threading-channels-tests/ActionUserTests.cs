@@ -37,6 +37,7 @@ public class ActionUserTests
             });
         });
     }
+    
     [Fact]
     public async Task AddUserActions_Ok()
     {
@@ -62,8 +63,6 @@ public class ActionUserTests
                     var httpContent = new StringContent(stringPayload, Encoding.UTF8, "application/json");
                     await client.PostAsync("/channel/action", httpContent);
                 }
-
-                // await client.PostAsync($"/channel/unsubscribe/{userId}", null);
             });
         }
 
@@ -76,6 +75,16 @@ public class ActionUserTests
                 var client = webApplicationFactory.CreateClient();
                 await client.PostAsync($"/channel/unsubscribe/{userId}", null);
             });
+
+            var userActions = await context.UserActions
+                .Where(x => string.Equals(x.UserId, userId.ToString()))
+                .OrderBy(x => x.CreatedOn)
+                .ToListAsync();
+            
+            for (var i = 1; i < userActions.Count; i++)
+            {
+                Assert.False(int.Parse(userActions[i].Action) < int.Parse(userActions[i - 1].Action));
+            }
         }
     }
 }
