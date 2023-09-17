@@ -14,58 +14,46 @@ namespace threading_channels_tests;
 
 public class ActionUserTests
 {
-    private readonly WebApplicationFactory<Program> _webApplicationFactory;
-
-    public ActionUserTests()
+    [Theory]
+    [InlineData(50, 50, 100, 35000)] // usual case.
+    [InlineData(25, 25, 200, 0)] // unsubscribe before all messages processed.
+    public async Task AddUserActions_Ok(int userCount, int userMessageCount, int userMessageDelayInMs,
+        int userMessagesDelay)
     {
-        _webApplicationFactory = GetWebApplicationFactory();
-        var dbContextFactory =
-            _webApplicationFactory.Services.GetRequiredService<IDbContextFactory<UserActionContext>>();
-        using var context = dbContextFactory.CreateDbContext();
-        context.Database.Migrate();
-    }
-    
-    [Fact]
-    public async Task AddUserActions_Ok()
-    {
-        const int userCount = 50;
-        const int userMessageCount = 50;
-        const int userMessageDelay = 100;
-        const int userMessagesDelay = 25000;
-        
+        var webApplicationFactory = GetWebApplicationFactory();
         var fixture = new Fixture();
         var userIds = fixture.CreateMany<Guid>(userCount);
 
+        var tasks = new List<Task>();
+
         foreach (var userId in userIds)
         {
-            Task.Run(async () =>
+            tasks.Add(Task.Run(async () =>
             {
-                var client = _webApplicationFactory.CreateClient();
+                var client = webApplicationFactory.CreateClient();
                 await client.PostAsync($"/channel/subscribe/{userId}", null);
                 for (var i = 0; i < userMessageCount; i++)
                 {
                     // immitate user delay
-                    await Task.Delay(userMessageDelay);
+                    await Task.Delay(userMessageDelayInMs);
                     var payload = new UserAction() { UserId = userId.ToString(), Action = i.ToString() };
                     var stringPayload = JsonConvert.SerializeObject(payload);
                     var httpContent = new StringContent(stringPayload, Encoding.UTF8, "application/json");
                     await client.PostAsync("/channel/action", httpContent);
                 }
-            });
+            }));
         }
 
-        await Task.Delay(userMessagesDelay);
+        var postMessagesTask = Task.WhenAll(tasks);
+        await Task.WhenAll(Task.Delay(userMessagesDelay), postMessagesTask);
 
         var dbContextFactory =
-            _webApplicationFactory.Services.GetRequiredService<IDbContextFactory<UserActionContext>>();
+            webApplicationFactory.Services.GetRequiredService<IDbContextFactory<UserActionContext>>();
         await using var context = await dbContextFactory.CreateDbContextAsync();
         foreach (var userId in userIds)
         {
-            Task.Run(async () =>
-            {
-                var client = _webApplicationFactory.CreateClient();
-                await client.PostAsync($"/channel/unsubscribe/{userId}", null);
-            });
+            var client = webApplicationFactory.CreateClient();
+            await client.PostAsync($"/channel/unsubscribe/{userId}", null);
 
             var userActions = await context.UserActions
                 .Where(x => string.Equals(x.UserId, userId.ToString()))
@@ -74,14 +62,18 @@ public class ActionUserTests
             
             for (var i = 1; i < userActions.Count; i++)
             {
+                // assert that in right order.
                 Assert.False(int.Parse(userActions[i].Action) < int.Parse(userActions[i - 1].Action));
             }
         }
+
+        // assert that all messages are processed.
+        Assert.Equal(userCount * userMessageCount, context.UserActions.Count());
     }
     
     private WebApplicationFactory<Program> GetWebApplicationFactory()
     {
-        return new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
+        var webApplicationFactory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
         {
             builder.ConfigureTestServices(services =>
             {
@@ -96,10 +88,17 @@ public class ActionUserTests
 
                 services.AddPooledDbContextFactory<UserActionContext>(options =>
                     options.UseNpgsql(
-                        $"User ID=postgres;Password=;Host=localhost;Port=15432;Database=channels-{Guid.NewGuid()};Connection Lifetime=0;")
+                        $"User ID=postgres;Password=;Host=localhost;Port=5432;Database=channels-{Guid.NewGuid()};Connection Lifetime=0;")
                 );
 
             });
         });
+        
+        var dbContextFactory =
+            webApplicationFactory.Services.GetRequiredService<IDbContextFactory<UserActionContext>>();
+        using var context = dbContextFactory.CreateDbContext();
+        context.Database.Migrate();
+
+        return webApplicationFactory;
     }
 }

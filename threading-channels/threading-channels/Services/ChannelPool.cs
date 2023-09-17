@@ -1,13 +1,17 @@
 ﻿using System.Collections.Concurrent;
 using System.Threading.Channels;
-using threading_channels.Services.Models;
 
 namespace threading_channels.Services;
 
-public class ChannelPool
+public struct MessageHandler<T>
 {
-    private readonly ConcurrentDictionary<string, Channel<UserAction>> _channels = new ();
-    private readonly ConcurrentDictionary<string, LongChannelTask> _longChannelTasks = new ();
+    public Channel<T> Channel { get; set; }
+    public LongChannelTask<T> TaskHandler { get; set; }
+}
+
+public class ChannelPool<T>
+{
+    private readonly ConcurrentDictionary<string, MessageHandler<T>> _messageHandlers = new ();
 
     // Now as singleton
     private readonly IServiceProvider _serviceProvider;
@@ -17,37 +21,31 @@ public class ChannelPool
         _serviceProvider = serviceProvider;
     } 
 
-    public void AddChannel(string userId)
+    public void SubscribeChannel(string userId, Func<T, IServiceProvider, CancellationToken, Task> func)
     {
-        var channel = Channel.CreateUnbounded<UserAction>(new UnboundedChannelOptions
+        var channel = Channel.CreateUnbounded<T>(new UnboundedChannelOptions
             { SingleReader = true });
-        _channels.TryAdd(userId, channel);
-        
-        var longChannelTask = new LongChannelTask();
-        _longChannelTasks.TryAdd(userId, longChannelTask);
-        
-        longChannelTask.StartTask(channel, async ch =>
+        var longChannelTask = new LongChannelTask<T> { ServiceProvider = _serviceProvider };
+
+        _messageHandlers.TryAdd(userId, new MessageHandler<T> { Channel = channel, TaskHandler = longChannelTask });
+        longChannelTask.StartTask(channel, func);
+    }
+
+    public async Task WriteToChannelAsync(string userId, T message, CancellationToken cancellationToken)
+    {
+        if (_messageHandlers.TryGetValue(userId, out var value))
         {
-            // Scope for right concurrency. For example to DB context.
-            await using var scope = _serviceProvider.CreateAsyncScope();
-            var msg = await ch.Reader.ReadAsync();
-            var service = scope.ServiceProvider.GetRequiredService<UserService>();
-            await service.WriteUserAction(msg, longChannelTask.CancellationToken);
-        });
+            await value.Channel.Writer.WriteAsync(message, cancellationToken).ConfigureAwait(false);
+        }
     }
 
-    public Channel<UserAction> GetChannel(string userId)
+    public async Task UnsubscribeChannel(string userId, CancellationToken cancellationToken)
     {
-        _channels.TryGetValue(userId, out var value);
-        return value;
-    }
-
-    public void DeleteChannel(string userId)
-    {
-        _longChannelTasks.TryRemove(userId, out var task);
-        task?.CancelTask();
-        
-        _channels.TryRemove(userId, out var channel);
-        channel?.Writer.Complete();
+        if (_messageHandlers.TryRemove(userId, out var value))
+        {
+            value.Channel.Writer.Complete();
+            cancellationToken.Register(() => value.TaskHandler.CancelTask());
+            await value.TaskHandler.Task.ConfigureAwait(false);
+        }
     }
 }

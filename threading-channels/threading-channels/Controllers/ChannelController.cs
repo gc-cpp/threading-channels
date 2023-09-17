@@ -9,9 +9,9 @@ namespace threading_channels.Controllers;
 public class ChannelController : ControllerBase
 {
     private readonly ILogger _logger;
-    private readonly ChannelPool _channelPool;
+    private readonly ChannelPool<UserAction> _channelPool;
 
-    public ChannelController(ILogger<ChannelController> logger, ChannelPool channelPool)
+    public ChannelController(ILogger<ChannelController> logger, ChannelPool<UserAction> channelPool)
     {
         _logger = logger;
         _channelPool = channelPool;
@@ -21,20 +21,24 @@ public class ChannelController : ControllerBase
     public void SubscribeUser([FromRoute] string userId)
     {
         _logger.LogInformation($"subscribe {userId}");
-        _channelPool.AddChannel(userId);
+        _channelPool.SubscribeChannel(userId, async (userAction, provider, ct) =>
+        {
+            await using var scope = provider.CreateAsyncScope();
+            var service = scope.ServiceProvider.GetRequiredService<UserService>();
+            await service.WriteUserAction(userAction, ct).ConfigureAwait(false);
+        });
     }
 
     [HttpPost("unsubscribe/{userId}")]
-    public void UnsubscribeUser([FromRoute] string userId)
+    public async Task UnsubscribeUser([FromRoute] string userId, CancellationToken cancellationToken)
     {
-        _channelPool.DeleteChannel(userId);
+        await _channelPool.UnsubscribeChannel(userId, cancellationToken);
     }
 
     [HttpPost("action")]
-    public async Task AddUserAction([FromBody] UserAction userAction)
+    public async Task AddUserAction([FromBody] UserAction userAction, CancellationToken cancellationToken)
     {
-        var channel = _channelPool.GetChannel(userAction.UserId);
+        await _channelPool.WriteToChannelAsync(userAction.UserId, userAction, cancellationToken);
         _logger.LogInformation($"write {userAction.UserId} {userAction.Action}");
-        await channel.Writer.WriteAsync(userAction);
     }
 }
