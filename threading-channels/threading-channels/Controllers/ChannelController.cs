@@ -32,6 +32,7 @@ public class ChannelController : ControllerBase
     [HttpPost("unsubscribe/{userId}")]
     public async Task UnsubscribeUser([FromRoute] string userId, CancellationToken cancellationToken)
     {
+        _logger.LogInformation($"unsubscribe {userId}");
         await _channelPool.UnsubscribeChannel(userId, cancellationToken);
     }
 

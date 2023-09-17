@@ -35,7 +35,7 @@ public class UserService
     private Task MakeDelay(CancellationToken cancellationToken)
     {
         var rand = new Random();
-        var del = rand.Next(500, 1000);
+        var del = rand.Next(200, 500);
         return Task.Delay(del, cancellationToken);
     }
 }
