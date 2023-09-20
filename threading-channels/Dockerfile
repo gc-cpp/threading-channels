@@ -11,13 +11,15 @@ COPY threading-channels/. ./threading-channels/
 WORKDIR /source/threading-channels
 RUN dotnet publish -c release -o /app --no-restore
 
+RUN dotnet tool install --tool-path /tools dotnet-trace \
+ && dotnet tool install --tool-path /tools dotnet-counters \
+ && dotnet tool install --tool-path /tools dotnet-dump \
+ && dotnet tool install --tool-path /tools dotnet-gcdump
+
 # final stage/image
 FROM mcr.microsoft.com/dotnet/aspnet:6.0
-WORKDIR /perf
-RUN apt-get update && apt-get install -y curl
-RUN curl -OL https://aka.ms/perfcollect
-RUN chmod +x perfcollect
-RUN ./perfcollect install
+WORKDIR /tools
+COPY --from=build /tools .
 WORKDIR /app
-COPY --from=build /app ./
+COPY --from=build /app .
 ENTRYPOINT ["dotnet", "threading-channels.dll"]
