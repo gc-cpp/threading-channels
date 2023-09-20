@@ -11,7 +11,7 @@ public struct MessageHandler<T>
 
 public class ChannelPool<T>
 {
-    private readonly ConcurrentDictionary<string, MessageHandler<T>> _messageHandlers = new ();
+    private readonly ConcurrentDictionary<string, MessageHandler<T>> _messageHandlers = new();
 
     // Now as singleton
     private readonly IServiceProvider _serviceProvider;
@@ -19,12 +19,12 @@ public class ChannelPool<T>
     public ChannelPool(IServiceProvider serviceProvider)
     {
         _serviceProvider = serviceProvider;
-    } 
+    }
 
     public void SubscribeChannel(string userId, Func<T, IServiceProvider, CancellationToken, Task> func)
     {
         var channel = Channel.CreateUnbounded<T>(new UnboundedChannelOptions
-            { SingleReader = true });
+        { SingleReader = true });
         var longChannelTask = new LongChannelTask<T> { ServiceProvider = _serviceProvider };
 
         _messageHandlers.TryAdd(userId, new MessageHandler<T> { Channel = channel, TaskHandler = longChannelTask });

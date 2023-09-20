@@ -9,7 +9,7 @@ builder.Services.AddEndpointsApiExplorer();
 
 builder.Services.AddPooledDbContextFactory<UserActionContext>(o =>
     o.UseNpgsql(
-        "User ID=postgres;Password=;Host=localhost;Port=5432;Database=channels;Connection Lifetime=0;"));
+        builder.Configuration.GetValue<string>("DbContextConnectionString")));
 builder.Services.AddScoped<UserService>();
 builder.Services.AddSingleton<ChannelPool<UserAction>>();
 

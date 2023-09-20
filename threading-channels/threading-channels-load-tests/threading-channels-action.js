@@ -2,6 +2,8 @@ import http from 'k6/http';
 import { sleep } from 'k6';
 import { randomIntBetween } from 'https://jslib.k6.io/k6-utils/1.2.0/index.js';
 
+const url = 'http://localhost:1030/channel';
+
 export const options = {
     thresholds: {
         http_req_failed: ['rate < 0.01'],
@@ -11,8 +13,8 @@ export const options = {
       load: {
         executor: 'constant-arrival-rate',
         duration: '15m', // total duration
-        preAllocatedVUs: 150, // to allocate runtime resources
-        rate: 100, // number of constant iterations given `timeUnit`
+        preAllocatedVUs: 250, // to allocate runtime resources
+        rate: 1500, // number of constant iterations given `timeUnit`
         timeUnit: '10s',
       },
       stress: {
@@ -22,12 +24,12 @@ export const options = {
         startRate: 50,
         stages: [
           { duration: "1m", target: 25 }, // below normal load
-          { duration: "2m", target: 150 },
-          { duration: "2m", target: 250 }, // normal load
-          { duration: "2m", target: 400 },
-          { duration: "2m", target: 720 }, // around the breaking point
-          { duration: "2m", target: 100 },
-          { duration: "2m", target: 20 }, // beyond the breaking point
+          { duration: "2m", target: 350 },
+          { duration: "2m", target: 750 }, // normal load
+          { duration: "2m", target: 1500 },
+          { duration: "2m", target: 2000 }, // around the breaking point
+          { duration: "2m", target: 450 },
+          { duration: "2m", target: 250 }, // beyond the breaking point
           { duration: "1m", target: 0 }, // scale down. Recovery stage.
         ],
       },
@@ -56,7 +58,6 @@ function uuidv4() {
 }
 
 export default function () {
-    const url = 'http://localhost:5030/channel';
     const params = {
         headers: {
             'Content-Type': 'application/json',

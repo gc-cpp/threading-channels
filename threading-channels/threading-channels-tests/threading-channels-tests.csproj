@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net7.0</TargetFramework>
+        <TargetFramework>net6.0</TargetFramework>
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
         <RootNamespace>threading_channels_tests</RootNamespace>
@@ -9,7 +9,7 @@
 
     <ItemGroup>
       <PackageReference Include="AutoFixture" Version="4.18.0" />
-      <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="7.0.10" />
+      <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="6.0.22" />
       <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.7.2" />
       <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
       <PackageReference Include="xunit" Version="2.5.0" />

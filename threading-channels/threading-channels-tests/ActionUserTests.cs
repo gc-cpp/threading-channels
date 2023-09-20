@@ -59,7 +59,7 @@ public class ActionUserTests
                 .Where(x => string.Equals(x.UserId, userId.ToString()))
                 .OrderBy(x => x.CreatedOn)
                 .ToListAsync();
-            
+
             for (var i = 1; i < userActions.Count; i++)
             {
                 // assert that in right order.
@@ -70,7 +70,7 @@ public class ActionUserTests
         // assert that all messages are processed.
         Assert.Equal(userCount * userMessageCount, context.UserActions.Count());
     }
-    
+
     private WebApplicationFactory<Program> GetWebApplicationFactory()
     {
         var webApplicationFactory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
@@ -80,7 +80,7 @@ public class ActionUserTests
                 services.RemoveAll<UserActionContext>();
                 services.RemoveAll<IDbContextFactory<UserActionContext>>();
                 services.RemoveAll<DbContextOptions>();
-                
+
                 foreach (var option in services.Where(s => s.ServiceType.BaseType == typeof(DbContextOptions)).ToList())
                 {
                     services.Remove(option);
@@ -93,7 +93,7 @@ public class ActionUserTests
 
             });
         });
-        
+
         var dbContextFactory =
             webApplicationFactory.Services.GetRequiredService<IDbContextFactory<UserActionContext>>();
         using var context = dbContextFactory.CreateDbContext();
