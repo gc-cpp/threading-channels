@@ -13,8 +13,8 @@ export const options = {
       load: {
         executor: 'constant-arrival-rate',
         duration: '15m', // total duration
-        preAllocatedVUs: 150, // to allocate runtime resources
-        rate: 100, // number of constant iterations given `timeUnit`
+        preAllocatedVUs: 250, // to allocate runtime resources
+        rate: 1500, // number of constant iterations given `timeUnit`
         timeUnit: '10s',
       },
       stress: {
