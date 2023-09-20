@@ -13,7 +13,7 @@ public class UserService
         _logger = logger;
         _dbContextFactory = dbContextFactory;
     }
-    
+
     public async Task WriteUserAction(UserAction userAction, CancellationToken cancellationToken)
     {
         await MakeDelay(cancellationToken);

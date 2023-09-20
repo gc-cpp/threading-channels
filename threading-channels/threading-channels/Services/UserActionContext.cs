@@ -8,7 +8,7 @@ public class UserActionContext : DbContext
     public UserActionContext(DbContextOptions dbContextOptions) : base(dbContextOptions)
     {
     }
-    
+
     public DbSet<UserAction> UserActions { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -16,7 +16,7 @@ public class UserActionContext : DbContext
         modelBuilder
             .Entity<UserAction>()
             .HasKey(x => x.Id);
-        
+
         modelBuilder
             .Entity<UserAction>()
             .Property(x => x.Id).ValueGeneratedOnAdd();
