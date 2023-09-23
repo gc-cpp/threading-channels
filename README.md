@@ -10,5 +10,6 @@
 https://k6.io/blog/ways-to-visualize-k6-results/
 k6 run --out dashboard threading-channels-action.js
 https://www.mytechramblings.com/posts/profiling-a-net-app-with-dotnet-cli-diagnostic-tools/
+
 ./dotnet-counters monitor --process-id 1 --refresh-interval 3 --counters System.Runtime,Microsoft.AspNetCore.Hosting
 https://www.csvplot.com/
